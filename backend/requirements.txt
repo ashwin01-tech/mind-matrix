@@ -1,9 +1,22 @@
-fastapi
-uvicorn
-sqlalchemy
-python-dotenv
-httpx
-elevenlabs
-websockets
-openai
-# numpy # useful for audio processing if needed
+# FastAPI and Server
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+websockets==12.0
+
+# Database
+sqlalchemy==2.0.25
+
+# Environment and Configuration
+python-dotenv==1.0.1
+
+# HTTP Client
+httpx==0.26.0
+
+# AI Services
+openai==1.10.0
+elevenlabs==0.2.27
+
+# Utilities
+pydantic==2.5.3
+pydantic-settings==2.1.0
+
