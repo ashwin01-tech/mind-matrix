@@ -48,6 +48,12 @@ export class WebSocketManager {
             return;
           }
           
+          // Handle streaming messages
+          if (data.type === 'stream') {
+            this.onMessage?.(data);
+            return;
+          }
+          
           this.onMessage?.(data);
         } catch (error) {
           console.error('Error parsing WebSocket message:', error);

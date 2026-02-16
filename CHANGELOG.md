@@ -2,6 +2,201 @@
 
 All notable changes to the Mind Matrix project.
 
+## [3.1.1] - 2024-02-16
+
+### 🎨 Major Visual Upgrade: Enhanced Network Visualization
+
+#### Emotional Tracking Focus
+- **User-Only Message Tracking**: Network now shows only user messages for accurate emotional pattern analysis
+- **Emotion-Based Node Colors**: Nodes directly represent emotions with intuitive color mapping
+  - 🟢 Green (#4ade80) - Happy
+  - 🔵 Blue (#60a5fa) - Sad
+  - 🔴 Red (#f87171) - Angry
+  - 🟣 Purple (#a78bfa) - Anxious
+  - 🟢 Teal (#34d399) - Calm
+  - ⚪ Gray (#9ca3af) - Neutral
+- **Intensity-Based Sizing**: Node size scales with emotional intensity (0-100%)
+- **Removed Role Filter**: Simplified UI - only tracking user emotions now
+
+#### Enhanced Visuals
+- **Beautiful Radial Gradient Background**: Rich atmospheric depth instead of flat black
+  - Center: #1a1a2e → Edge: #000000 with smooth transitions
+- **3D Glowing Nodes**: 
+  - Custom Three.js spheres with metallic materials
+  - Emissive glow matching emotion color
+  - Point light attached to each node for atmospheric effect
+- **Enhanced Particle System**:
+  - 6 particles for emotional connections (gold #fbbf24)
+  - 4 particles for temporal connections (purple #667eea)
+  - 2 particles for neural connections
+  - Thicker particle width (4) for better visibility
+  - Color-coded by connection type
+
+#### Smooth Animations
+- **Position Preservation**: Nodes maintain positions when filters change
+- **Velocity Tracking**: Smooth transitions without jarring jumps
+- **Gradual Force Decay**: 
+  - d3AlphaDecay: 0.01 (slower, smoother)
+  - cooldownTime: 15000ms stabilization period
+- **Interactive Physics**: Continuous animation with drag-and-drop support
+
+#### Enhanced Connection Algorithms
+- **Neural Mode**: 15-message lookback window with emotional linking (stronger connections for matching emotions)
+- **Temporal Mode**: Simple linear timeline for conversation flow
+- **Emotional Mode**: Clusters messages by matching emotions
+
+#### Improved Statistics
+- Simplified metrics focused on user tracking:
+  - "Your Messages" count
+  - Total connections
+  - Emotions detected
+- Real-time updates with filter changes
+
+#### Performance Optimizations
+- Transparent background for CSS gradient rendering
+- Efficient re-renders with position caching
+- Conditional physics (pausable simulation)
+
+### Files Modified
+- `/client/src/pages/NetworkVisualization.jsx` - Complete visual overhaul
+- `/NETWORK_VISUALIZATION_UPGRADE.md` - Detailed upgrade documentation
+
+---
+
+## [3.1.0] - 2026-02-16
+
+### 🎨 Major Enhancement: Neural Network Visualization
+
+#### New Features
+- **Separate Network Visualization Page** (`/network`)
+  - Full-screen 3D interactive neural network graph
+  - Real-time connection to WebSocket for live data updates
+  - Enhanced navigation controls and camera positioning
+
+- **Intelligent Connection Types**
+  - **Neural Network Mode**: Multi-layered connections with temporal, emotional, and conversational links
+  - **Temporal Mode**: Traditional linear timeline connections
+  - **Emotional Groups Mode**: Clusters messages by emotional similarity
+
+- **Interactive Node Details Panel**
+  - Click any node to view detailed information
+  - Shows Message ID, Role, Emotion with intensity
+  - Full message content preview
+  - Session ID tracking
+  - **Quick Actions**:
+    - "Go to Chat" - Navigate directly to the message's chat session
+    - "Copy Message" - Copy message content to clipboard
+  - Automatic camera focus on selected node
+
+- **Advanced Filtering System**
+  - Filter by emotion (happy, sad, angry, anxious, calm, neutral)
+  - Filter by role (user messages, AI messages, or both)
+  - Real-time graph updates on filter change
+
+- **Connection Visualization**
+  - Color-coded links by type:
+    - Blue: Conversational pairs (User ↔ AI)
+    - Yellow: Emotional connections
+    - White: Temporal/sequential flow
+  - Animated particles flowing through links
+  - Link thickness indicates connection strength
+
+- **Statistics Dashboard**
+  - Total nodes and links count
+  - User vs AI message distribution
+  - Unique emotions tracked
+  - Real-time updates
+
+- **Graph Controls**
+  - Play/Pause physics simulation
+  - Refresh data from server
+  - Export graph data as JSON
+  - Zoom and navigation controls
+  - Drag-and-drop nodes
+  - Auto-layout algorithms
+
+#### Backend Improvements
+- **Enhanced Network Data API**
+  - Added `sessionId` to network nodes
+  - Improved connection algorithms for neural patterns
+  - Session-based clustering
+  - Emotional similarity detection
+  - Conversational pair linking
+  - Temporal flow tracking
+
+- **Smart Link Generation**
+  - Temporal links: Connect consecutive messages
+  - Conversational links: User message → AI response pairs
+  - Emotional links: Connect messages with same emotion (within context window)
+  - Session links: Connect messages within same chat session
+
+- **Graph Data Persistence**
+  - Network data automatically updates when chats are deleted
+  - Proper cascade deletion in database
+  - Real-time synchronization with chat history
+
+#### UI/UX Enhancements
+- **Sidebar Integration**
+  - New "Neural Network" button with gradient styling
+  - Quick navigation to visualization page
+  - Maintains session context
+
+- **Responsive Design**
+  - Full viewport utilization
+  - Collapsible control panels
+  - Mobile-friendly interface
+  - Glass morphism design elements
+
+- **Visual Feedback**
+  - Emotion-based node colors (happy=green, sad=blue, angry=red, etc.)
+  - Node size scales with emotional intensity
+  - Smooth animations and transitions
+  - Particle effects on connections
+
+### 🐛 Bug Fixes
+- Fixed linear connection pattern - now uses neural network topology
+- Fixed graph not clearing when chats are deleted
+- Fixed WebSocket connection to use correct port (3000 vs 5173)
+- Fixed advanced analytics state not being initialized
+- Added proper sessionId tracking in graph nodes
+
+### 🔧 Technical Improvements
+- Optimized graph rendering with memoization
+- Improved WebSocket message handling
+- Better error boundaries for 3D visualization
+- Enhanced data structure for graph nodes and links
+- Reduced redundant connections with smart filtering
+
+---
+
+## [3.0.1] - 2026-02-16
+
+### 🐛 Bug Fixes
+
+#### Three.js Version Conflicts
+- **Fixed**: Removed conflicting `overrides` section in client/package.json that forced Three.js to version 0.170.0
+- **Fixed**: Downgraded react-force-graph-3d to v1.24.4 for compatibility
+- **Fixed**: Resolved "Multiple instances of Three.js" warning
+- **Fixed**: Resolved WebGPU error: "can't access property VERTEX, GPUShaderStage is undefined"
+- All visualization components now render without errors
+
+#### Component Issues
+- **Fixed**: Removed misplaced import statement in AnalyticsDashboard.jsx
+- **Fixed**: Added graceful fallback for NeuralNetworkGraph when no data is available
+- **Fixed**: Added null/undefined checks for network data rendering
+
+#### Server Issues
+- **Fixed**: Port 3000 EADDRINUSE error handling
+- **Fixed**: Proper cleanup of WebSocket connections on server restart
+
+### 🔧 Improvements
+- Enhanced error boundaries for 3D visualization components
+- Better loading states for network graph visualization
+- Improved error messages for missing data scenarios
+- Added data validation before rendering charts
+
+---
+
 ## [3.0.0] - 2026-02-15
 
 ### 🚀 Major Upgrade: Emotional Intelligence & Memory Management

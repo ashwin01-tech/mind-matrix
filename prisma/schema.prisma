@@ -20,6 +20,7 @@ model User {
   emotionalBaseline String   @default("neutral")
 
   conversations     Conversation[]
+  sessions          ChatSession[]
   emotions          EmotionLog[]
   activities        UserActivity[]
   embeddings        ConversationEmbedding[]
@@ -27,17 +28,53 @@ model User {
   @@map("users")
 }
 
+model ChatSession {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  title     String   @default("New Chat")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+  
+  messages  Conversation[]
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@map("chat_sessions")
+}
+
 model Conversation {
   id                Int      @id @default(autoincrement())
   userId            Int
+  sessionId         Int?     // Optional for backward compatibility, but should be populated
   timestamp         DateTime @default(now())
   role              String   // 'user' or 'assistant'
   content           String
   
-  // Emotional and contextual metadata
+  // Emotional and contextual metadata (Phase 1-2)
   emotion           String?
   emotionIntensity  Float    @default(0.5)
   sentimentScore    Float    @default(0.0)
+  
+  // Phase 3: Advanced emotion analysis
+  confidence        Float?   // LLM confidence 0-1
+  method            String?  // "llm" or "keyword"
+  valence           String?  // positive, negative, neutral
+  arousal           String?  // high, medium, low
+  triggers          String?  // JSON: ["work", "health"]
+  cognitive_distortions String? // JSON: ["catastrophizing", "all_or_nothing"]
+  secondary_emotions String? // JSON: ["anxiety", "guilt"]
+  psychological_state String? // JSON: detailed analysis
+  
+  // Phase 3: Therapy response data
+  therapy_mode      String?  // "crisis", "exploration", "support", "skills"
+  therapy_technique String?  // "thought_challenging", "grounding", etc
+  exercise          String?  // JSON: exercise data with steps
+  
+  // Phase 3: Crisis detection
+  crisis_detected   Boolean  @default(false)
+  crisis_severity   String?  // "low", "medium", "high", "critical"
+  safety_plan_offered Boolean @default(false)
+  crisis_resources  String?  // JSON: emergency contacts and resources
   
   // Audio and voice metadata
   audioPath         String?
@@ -49,11 +86,15 @@ model Conversation {
   relevanceScore    Float    @default(1.0)
   
   user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session           ChatSession? @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   embedding         ConversationEmbedding?
   emotionLogs       EmotionLog[]
 
   @@index([userId])
+  @@index([sessionId])
   @@index([timestamp])
+  @@index([crisis_detected])
+  @@index([therapy_mode])
   @@map("conversations")
 }
 

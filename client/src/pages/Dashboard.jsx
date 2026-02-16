@@ -11,7 +11,11 @@ import '../App.css';
 
 function Dashboard() {
     const [messages, setMessages] = useState([]);
-    const [history, setHistory] = useState([]);
+    const [sessions, setSessions] = useState([]);
+    const [currentSessionId, setCurrentSessionId] = useState(null);
+    const [analyticsData, setAnalyticsData] = useState(null);
+    const [networkData, setNetworkData] = useState(null);
+    const [advancedAnalytics, setAdvancedAnalytics] = useState(null);
     const [input, setInput] = useState('');
     const [isSpeaking, setIsSpeaking] = useState(false);
     const [isTyping, setIsTyping] = useState(false);
@@ -34,7 +38,10 @@ function Dashboard() {
     // Initialize managers
     useEffect(() => {
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsUrl = `${protocol}//${window.location.host}/ws/chat`;
+        // In development, connect to backend on port 3000
+        const isDevelopment = window.location.port === '5173';
+        const host = isDevelopment ? 'localhost:3000' : window.location.host;
+        const wsUrl = `${protocol}//${host}/ws/chat`;
 
         // Initialize audio manager
         try {
@@ -72,53 +79,127 @@ function Dashboard() {
     // Auto-scroll to bottom
     useEffect(() => {
         chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages, activeTab]);
+        // Focus input on session switch
+        if (currentSessionId) {
+            inputRef.current?.focus();
+        }
+    }, [messages, activeTab, currentSessionId]);
 
     // Handle WebSocket messages
     const handleMessage = useCallback((data) => {
         // console.log('Received message:', data.type);
 
         switch (data.type) {
+            case 'sessions':
+                setSessions(data.content);
+                break;
+
             case 'history':
-                // Load chat history from backend
-                setHistory(data.content);
-                // Also populate messages if empty to show context immediately
-                if (messages.length === 0 && data.content.length > 0) {
-                    setMessages(data.content);
+                // Load chat history for a session
+                setMessages(data.content);
+                if (data.sessionId) {
+                    setCurrentSessionId(data.sessionId);
                 }
                 break;
 
-            case 'text':
-                setMessages((prev) => [...prev, {
-                    role: 'assistant',
-                    content: data.content,
-                    timestamp: data.timestamp || new Date().toISOString(),
-                    emotion: data.emotion || emotion,
-                }]);
+            case 'stream':
+                // Handle streaming chunks in real-time
+                setMessages((prev) => {
+                    const lastMsg = prev[prev.length - 1];
+                    // If last message is from assistant and recent, append to it
+                    if (lastMsg && lastMsg.role === 'assistant' && !lastMsg.complete) {
+                        return [
+                            ...prev.slice(0, -1),
+                            {
+                                ...lastMsg,
+                                content: lastMsg.content + data.content
+                            }
+                        ];
+                    }
+                    // Otherwise create new streaming message
+                    return [...prev, {
+                        role: 'assistant',
+                        content: data.content,
+                        timestamp: data.timestamp || new Date().toISOString(),
+                        emotion: emotion,
+                        complete: false
+                    }];
+                });
                 setIsTyping(false);
+                break;
 
-                // Update UI emotion based on AI response
-                if (data.emotion) {
-                    setEmotion(data.emotion);
-                    setEmotionIntensity(data.emotion_intensity || 0.5);
+            case 'text':
+                // Mark the streaming message as complete or add new message
+                if (!data.sessionId || data.sessionId === currentSessionId) {
+                    setMessages((prev) => {
+                        const lastMsg = prev[prev.length - 1];
+                        // If last message was streaming, mark it complete
+                        if (lastMsg && lastMsg.role === 'assistant' && !lastMsg.complete) {
+                            return [
+                                ...prev.slice(0, -1),
+                                {
+                                    ...lastMsg,
+                                    content: data.content,
+                                    complete: true,
+                                    emotion: data.emotion || lastMsg.emotion,
+                                }
+                            ];
+                        }
+                        // Otherwise add new message
+                        return [...prev, {
+                            role: 'assistant',
+                            content: data.content,
+                            timestamp: data.timestamp || new Date().toISOString(),
+                            emotion: data.emotion || emotion,
+                            complete: true
+                        }];
+                    });
+                    setIsTyping(false);
+
+                    // Update UI emotion based on AI response
+                    if (data.emotion) {
+                        setEmotion(data.emotion);
+                        setEmotionIntensity(data.emotion_intensity || 0.5);
+                    }
                 }
                 break;
 
             case 'audio':
-                if (voiceEnabled && audioManagerRef.current) {
+                // Check session match if possible (backend sends it?)
+                if ((!data.sessionId || data.sessionId === currentSessionId) && voiceEnabled && audioManagerRef.current) {
                     audioManagerRef.current.addChunk(data.content);
                     setIsSpeaking(true);
                 }
                 break;
 
             case 'audio_end':
-                // Audio stream completed - now play the concatenated audio
-                if (voiceEnabled && audioManagerRef.current) {
+                if ((!data.sessionId || data.sessionId === currentSessionId) && voiceEnabled && audioManagerRef.current) {
                     audioManagerRef.current.playAudio().catch(err => {
                         console.error('Failed to play audio:', err);
                         setIsSpeaking(false);
                     });
                 }
+                break;
+
+            case 'analytics_update':
+                // We'll store this in a ref or state passed down to analytics
+                // For simplicity, let's just log it or handle it in AnalyticsDashboard if we pass wsManager
+                // Actually, AnalyticsDashboard asks for it via wsManager.send('get_analytics').
+                // The response comes here.
+                // We need state for analyticsData.
+                setAnalyticsData({
+                    stats: data.stats,
+                    trends: data.trends,
+                    insights: data.insights
+                });
+                break;
+
+            case 'network_data':
+                setNetworkData(data.data);
+                break;
+
+            case 'advanced_analytics':
+                setAdvancedAnalytics(data.data);
                 break;
 
             case 'error':
@@ -130,7 +211,7 @@ function Dashboard() {
             default:
                 break;
         }
-    }, [emotion, messages.length]);
+    }, [emotion, messages.length, currentSessionId, voiceEnabled]);
 
     const handleError = useCallback((errorMessage) => {
         setError(errorMessage);
@@ -145,6 +226,25 @@ function Dashboard() {
         }
     }, []);
 
+    // --- Chat Session Actions ---
+    const handleCreateSession = () => {
+        wsManagerRef.current?.send(JSON.stringify({ type: 'create_session' }));
+        if (window.innerWidth < 768) setSidebarOpen(false);
+    };
+
+    const handleSwitchSession = (sessionId) => {
+        if (sessionId === currentSessionId) return;
+        setMessages([]); // Clear current messages while loading
+        wsManagerRef.current?.send(JSON.stringify({ type: 'switch_session', sessionId }));
+        if (window.innerWidth < 768) setSidebarOpen(false);
+    };
+
+    const handleDeleteSession = (sessionId) => {
+        if (confirm('Are you sure you want to delete this chat?')) {
+            wsManagerRef.current?.send(JSON.stringify({ type: 'delete_session', sessionId }));
+        }
+    };
+
     const sendMessage = async () => {
         if (!input.trim()) return;
 
@@ -155,7 +255,7 @@ function Dashboard() {
 
         const userMessage = input.trim();
 
-        // Add user message to UI
+        // Add user message to UI immediately
         setMessages((prev) => [...prev, {
             role: 'user',
             content: userMessage,
@@ -165,9 +265,11 @@ function Dashboard() {
 
         // Send to server
         const payload = JSON.stringify({
-            type: 'text', // Explicit type for clarity
+            type: 'text',
             content: userMessage,
             voiceEnabled: voiceEnabled
+            // sessionId is implied by backend state, but strictly speaking we could send it.
+            // backend uses closure 'currentSessionId'.
         });
         const sent = wsManagerRef.current?.send(payload);
 
@@ -197,8 +299,11 @@ function Dashboard() {
                 toggleSidebar={() => setSidebarOpen(!sidebarOpen)}
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
-                history={history}
-                messages={messages}
+                sessions={sessions}
+                currentSessionId={currentSessionId}
+                onSwitchSession={handleSwitchSession}
+                onCreateSession={handleCreateSession}
+                onDeleteSession={handleDeleteSession}
             />
 
             {/* Main Content Area */}
@@ -231,6 +336,10 @@ function Dashboard() {
                             emotion={emotion}
                             emotionIntensity={emotionIntensity}
                             messages={messages}
+                            wsManager={wsManagerRef.current}
+                            analyticsData={analyticsData}
+                            networkData={networkData}
+                            advancedAnalytics={advancedAnalytics}
                         />
                     ) : (
                         <>

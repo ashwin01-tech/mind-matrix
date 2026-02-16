@@ -7,6 +7,8 @@
         "build": "tsc && cd client && npm install && npm run build",
         "start": "node dist/server.js",
         "dev": "concurrently \"npm run server\" \"npm run client\"",
+        "dev:single": "npm run build && npm start",
+        "dev:watch": "nodemon --watch src --watch client/dist --exec \"npm run build && npm start\"",
         "server": "nodemon src/server.ts",
         "client": "cd client && npm run dev",
         "lint": "eslint src/**/*.ts",
@@ -17,12 +19,12 @@
     "author": "",
     "license": "ISC",
     "dependencies": {
+        "@dotenvx/dotenvx": "^1.34.2",
         "@prisma/client": "5.10.0",
         "cors": "^2.8.6",
-        "dotenv": "^17.3.1",
-        "elevenlabs": "^1.59.0",
         "express": "^5.2.1",
         "openai": "^6.22.0",
+        "recharts": "^3.7.0",
         "ws": "^8.19.0",
         "zod": "^4.3.6"
     },

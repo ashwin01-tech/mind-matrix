@@ -8,11 +8,8 @@ const envSchema = z.object({
     NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
     DATABASE_URL: z.string().default('file:../mindmatrix.db'),
     GROQ_API_KEY: z.string().optional(),
-    ELEVENLABS_API_KEY: z.string().optional(),
     AI_BASE_URL: z.string().default('https://api.groq.com/openai/v1'),
     AI_MODEL: z.string().default('llama-3.3-70b-versatile'),
-    VOICE_ID: z.string().default('21m00Tcm4TlvDq8ikWAM'),
-    AUDIO_MODEL: z.string().default('eleven_monolingual_v1'),
 });
 
 const processEnv = envSchema.safeParse(process.env);

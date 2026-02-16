@@ -32,7 +32,7 @@ export class AIService {
 
     async generatePsychologicalProfile(history: any[]) {
         try {
-            const prompt = `
+            const prompt = \`
             Analyze the following conversation history and provide a psychological profile.
             Focus on:
             1. Emotional stability and dominant moods.
@@ -44,7 +44,7 @@ export class AIService {
             ${JSON.stringify(history)}
             
             Keep it concise (approx 100 words).
-            `;
+            \`;
 
             const response = await this.openai.chat.completions.create({
                 model: config.AI_MODEL,
@@ -57,42 +57,6 @@ export class AIService {
         } catch (error) {
             console.error('Error generating profile:', error);
             return 'Could not generate profile at this time.';
-        }
-    }
-
-    async analyzeEmotionWithLLM(text: string, history: any[] = []) {
-        try {
-            const prompt = `Analyze the emotional content of this message: "${text}"
-
-${history.length > 0 ? `Context from previous messages:\n${JSON.stringify(history.slice(-3))}` : ''}
-
-Return ONLY a valid JSON object (no markdown, no extra text) with this exact structure:
-{
-  "emotion": "one of: happy, sad, angry, anxious, calm, aggressive, fearful, disgusted, neutral",
-  "intensity": 0.0-1.0,
-  "valence": "positive, negative, neutral, or mixed",
-  "arousal": "low, medium, or high",
-  "confidence": 0.0-1.0,
-  "triggers": ["array of identified triggers"],
-  "cognitiveDistortions": ["array of cognitive distortions if any"],
-  "psychological_state": "brief description",
-  "recommendations": ["array of 1-2 brief recommendations"]
-}`;
-
-            const response = await this.openai.chat.completions.create({
-                model: config.AI_MODEL,
-                messages: [
-                    { role: 'system', content: 'You are an expert emotion analysis AI. Return only valid JSON.' },
-                    { role: 'user', content: prompt }
-                ],
-                temperature: 0.3,
-                max_tokens: 400,
-            });
-
-            return response.choices[0]?.message?.content || '';
-        } catch (error) {
-            console.error('Error analyzing emotion with LLM:', error);
-            throw error;
         }
     }
 }
