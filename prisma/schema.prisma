@@ -1,0 +1,124 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                Int      @id @default(autoincrement())
+  username          String   @unique
+  createdAt         DateTime @default(now())
+  lastInteraction   DateTime @default(now())
+  
+  // Personality and preference tracking (stored as JSON)
+  personalityTraits String   @default("{}") // JSON string
+  speakingStyle     String   @default("{}") // JSON string
+  preferences       String   @default("{}") // JSON string
+  emotionalBaseline String   @default("neutral")
+
+  conversations     Conversation[]
+  emotions          EmotionLog[]
+  activities        UserActivity[]
+  embeddings        ConversationEmbedding[]
+
+  @@map("users")
+}
+
+model Conversation {
+  id                Int      @id @default(autoincrement())
+  userId            Int
+  timestamp         DateTime @default(now())
+  role              String   // 'user' or 'assistant'
+  content           String
+  
+  // Emotional and contextual metadata
+  emotion           String?
+  emotionIntensity  Float    @default(0.5)
+  sentimentScore    Float    @default(0.0)
+  
+  // Audio and voice metadata
+  audioPath         String?
+  audioDuration     Float?
+  voiceExpression   String?
+  
+  // Context and relevance
+  contextWindow     Int      @default(0)
+  relevanceScore    Float    @default(1.0)
+  
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  embedding         ConversationEmbedding?
+  emotionLogs       EmotionLog[]
+
+  @@index([userId])
+  @@index([timestamp])
+  @@map("conversations")
+}
+
+model EmotionLog {
+  id                Int      @id @default(autoincrement())
+  userId            Int
+  timestamp         DateTime @default(now())
+  
+  // Primary emotion and intensity
+  emotion           String
+  intensity         Float    @default(0.5)
+  
+  // Contextual information
+  trigger           String?
+  conversationId    Int?
+  
+  // Emotional patterns
+  emotionTrend      String   @default("stable")
+  durationEstimate  Int?
+  
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversation      Conversation? @relation(fields: [conversationId], references: [id])
+
+  @@index([userId])
+  @@index([timestamp])
+  @@index([emotion])
+  @@map("emotion_logs")
+}
+
+model UserActivity {
+  id                Int      @id @default(autoincrement())
+  userId            Int
+  timestamp         DateTime @default(now())
+  
+  activityType      String
+  activityCategory  String?
+  description       String?
+  
+  activityData      String   @default("{}") // JSON string
+  duration          Float?
+  emotionalContext  String?
+  
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([timestamp])
+  @@map("user_activities")
+}
+
+model ConversationEmbedding {
+  id                Int      @id @default(autoincrement())
+  conversationId    Int      @unique
+  userId            Int
+  
+  embeddingVector   String   // JSON string of float array
+  embeddingDimension Int     @default(384)
+  
+  chunkIndex        Int      @default(0)
+  relevanceTags     String   @default("[]") // JSON string array
+  
+  timestamp         DateTime @default(now())
+  
+  conversation      Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("conversation_embeddings")
+}

@@ -1,0 +1,40 @@
+{
+    "name": "mind-matrix-monolith",
+    "version": "1.0.0",
+    "description": "AI-powered conversational interface with emotional intelligence",
+    "main": "dist/server.js",
+    "scripts": {
+        "build": "tsc && cd client && npm install && npm run build",
+        "start": "node dist/server.js",
+        "dev": "concurrently \"npm run server\" \"npm run client\"",
+        "server": "nodemon src/server.ts",
+        "client": "cd client && npm run dev",
+        "lint": "eslint src/**/*.ts",
+        "prisma:generate": "prisma generate",
+        "prisma:push": "prisma db push"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "@prisma/client": "5.10.0",
+        "cors": "^2.8.6",
+        "dotenv": "^17.3.1",
+        "elevenlabs": "^1.59.0",
+        "express": "^5.2.1",
+        "openai": "^6.22.0",
+        "ws": "^8.19.0",
+        "zod": "^4.3.6"
+    },
+    "devDependencies": {
+        "@types/cors": "^2.8.19",
+        "@types/express": "^5.0.6",
+        "@types/node": "^25.2.3",
+        "@types/ws": "^8.18.1",
+        "concurrently": "^9.2.1",
+        "nodemon": "^3.1.11",
+        "prisma": "5.10.0",
+        "ts-node": "^10.9.2",
+        "typescript": "^5.9.3"
+    }
+}
